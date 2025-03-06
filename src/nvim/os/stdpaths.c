@@ -225,6 +225,7 @@ char *stdpaths_get_xdg_var(const XDGVarType idx)
     xfree((char *)env_val);
     fprintf(stderr, "%s", "stderr: ********************************Eddig eljut 10*****************************************\n");
   }
+  fprintf(stderr, "Successfully returning: %s\n", ret);
   return ret;
 }
 
