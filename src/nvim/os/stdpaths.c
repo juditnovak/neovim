@@ -181,6 +181,8 @@ char *stdpaths_get_xdg_var(const XDGVarType idx)
   }
 
 #ifdef MSWIN
+  printf("********************************MSWIN*****************************************");
+  sprintf(stderr, "stderr: ********************************MSWIN*****************************************");
   if (env_val == NULL && xdg_defaults_env_vars[idx] != NULL) {
     env_val = os_getenv(xdg_defaults_env_vars[idx]);
     if (env_val != NULL) {
@@ -212,7 +214,7 @@ char *stdpaths_get_xdg_var(const XDGVarType idx)
     ret = xdg_remove_duplicate(ret, ENV_SEPSTR);
   }
 
-  if (memfree) {
+  if (memfree && env_val != NULL) {
     xfree((char *)env_val);
   }
   return ret;
