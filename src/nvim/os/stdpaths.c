@@ -182,7 +182,7 @@ char *stdpaths_get_xdg_var(const XDGVarType idx)
 
 #ifdef MSWIN
   printf("********************************MSWIN*****************************************");
-  sprintf(stderr, "stderr: ********************************MSWIN*****************************************");
+  sprintf(stderr, "%s", stderr: ********************************MSWIN*****************************************");
   if (env_val == NULL && xdg_defaults_env_vars[idx] != NULL) {
     env_val = os_getenv(xdg_defaults_env_vars[idx]);
     if (env_val != NULL) {
