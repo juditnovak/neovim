@@ -33,8 +33,9 @@ jobs:
 
       - name: Build
         run: |
-          cmake --preset ci -D CMAKE_BUILD_TYPE='RelWithDebInfo' ${{ inputs.build_flags }}
+          cmake --preset ci -D CMAKE_BUILD_TYPE='RelWithDebInfo' -D ENABLE_ASAN_UBSAN=ON ${{ inputs.build_flags }}
           cmake --build build
+        md build\log
 
       - name: Install test deps
         run: |
