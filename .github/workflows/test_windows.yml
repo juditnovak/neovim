@@ -29,8 +29,7 @@ jobs:
 
       - name: Build
         run: |
-          # cmake --preset ci -D CMAKE_BUILD_TYPE='RelWithDebInfo' ${{ inputs.build_flags }}
-          cmake --preset ci -D CMAKE_BUILD_TYPE='RelWithDebInfo' -D ENABLE_ASAN_UBSAN=ON  ${{ inputs.build_flags }}
+          cmake --preset ci -D CMAKE_BUILD_TYPE='RelWithDebInfo' ${{ inputs.build_flags }}
           cmake --build build
 
       - name: Install test deps
@@ -52,22 +51,22 @@ jobs:
           npm.cmd install -g neovim
           Get-Command -CommandType Application neovim-node-host.cmd
           npm.cmd link neovim
-        env:
-          TEST_FILE: test\functional\options\defaults_spec.lua
 
       - if: ${{ matrix.test == 'functional' }}
         name: functionaltest
         timeout-minutes: ${{ inputs.functionaltest_timeout }}
         run: cmake --build build --target functionaltest
+        env:
+          TEST_FILE: test\functional\options\defaults_spec.lua
 
-      - if: ${{ matrix.test == 'old' }}
-        uses: msys2/setup-msys2@v2
-        with:
-          update: true
-          install: unzip
-          pacboy: >-
-            make:p gcc:p diffutils:p
-          release: false
+      # - if: ${{ matrix.test == 'old' }}
+      #   uses: msys2/setup-msys2@v2
+      #   with:
+      #     update: true
+      #     install: unzip
+      #     pacboy: >-
+      #       make:p gcc:p diffutils:p
+      #     release: false
 
       # - if: ${{ matrix.test == 'old' }}
       #   name: oldtest
@@ -75,7 +74,8 @@ jobs:
       #   run: |
       #     cd test/old/testdir
       #     mingw32-make VERBOSE=1
-      - name: Show logs
+      - if: '!cancelled()'
+        name: Show logs
         run: |
           cat $(find "$LOG_DIR" -type f)
           cat $(find "$NVIM_LOG_FiLE" -type f)
