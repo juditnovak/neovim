@@ -532,6 +532,9 @@ static void terminfo_start(TUIData *tui)
   if (konsole_dbus_session != NULL) {
     xfree((char *)konsole_dbus_session);
   }
+  if (term_program_version_env!= NULL) {
+    xfree((char *)term_program_version_env);
+  }
 }
 
 /// Disable the alternate screen and prepare for the TUI to close.
