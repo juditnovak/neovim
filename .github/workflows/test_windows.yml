@@ -9,6 +9,10 @@ on:
         type: number
   workflow_dispatch:
 
+env:
+  ASAN_OPTIONS: detect_leaks=1:check_initialization_order=1:log_path=${{ github.workspace }}\build\log\asan:intercept_tls_get_addr=0
+  LOG_DIR: ${{ github.workspace }}\build\log
+
 jobs:
   windows:
     runs-on: windows-2022
@@ -77,5 +81,5 @@ jobs:
       - if: '!cancelled()'
         name: Show logs
         run: |
-          cat $(find "$LOG_DIR" -type f)
-          cat $(find "$NVIM_LOG_FiLE" -type f)
+          type build\log\* > concat.txt
+          type concat.txt
