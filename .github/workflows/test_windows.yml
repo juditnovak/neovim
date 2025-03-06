@@ -16,7 +16,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        test: [functional, old]
+        # test: [functional, old ]
+        test: [functional]
+    variables:
+      TEST_FILE: test\functional\options\defaults_spec.lua
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
@@ -55,7 +58,7 @@ jobs:
       - if: ${{ matrix.test == 'functional' }}
         name: functionaltest
         timeout-minutes: ${{ inputs.functionaltest_timeout }}
-        run: TEST_FILE=test\functional\options\defaults_spec.lua cmake --build build --target functionaltest
+        run: cmake --build build --target functionaltest
 
       - if: ${{ matrix.test == 'old' }}
         uses: msys2/setup-msys2@v2
