@@ -2588,7 +2588,7 @@ int eval0(char *arg, typval_T *rettv, exarg_T *eap, evalarg_T *const evalarg)
       }
     }
 
-    fprintf(stderr, "stderr: ******************************** Halfway through()*****************************************\n", ret);
+    fprintf(stderr, "stderr: ******************************** Halfway through()*****************************************\n");
     if (eap != NULL && p != NULL) {
       // Some of the expression may not have been consumed.
       // Only execute a next command if it cannot be a "||" operator.
@@ -2605,7 +2605,7 @@ int eval0(char *arg, typval_T *rettv, exarg_T *eap, evalarg_T *const evalarg)
     eap->nextcmd = check_nextcmd(p);
   }
 
-  fprintf(stderr, "stderr: ******************************** Finishing eval0()*****************************************\n", ret);
+  fprintf(stderr, "stderr: ******************************** Finishing eval0(): %d *****************************************\n", ret);
   return ret;
 }
 

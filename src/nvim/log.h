@@ -29,6 +29,8 @@
 
 #define LOG(level, ...) logmsg((level), NULL, __func__, __LINE__, true, __VA_ARGS__)
 
+#define NVIM_LOG_DEBUG 1
+
 #ifdef NVIM_LOG_DEBUG
 # define DLOG(...) logmsg(LOGLVL_DBG, NULL, __func__, __LINE__, true, __VA_ARGS__)
 # define DLOGN(...) logmsg(LOGLVL_DBG, NULL, __func__, __LINE__, false, __VA_ARGS__)
