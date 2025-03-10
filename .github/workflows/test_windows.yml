@@ -82,5 +82,6 @@ jobs:
         name: Show logs
         run: |
           dir build\log\
+          type D:/a/neovim/neovim/build/.nvimlog
           type build\log\* > concat.txt
           type concat.txt

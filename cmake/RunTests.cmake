@@ -96,7 +96,7 @@ if(res)
   # Dump the logfile on CI (if not displayed and moved already).
   if(CI_BUILD)
     if(EXISTS $ENV{NVIM_LOG_FILE} AND NOT EXISTS $ENV{NVIM_LOG_FILE}.displayed)
-      file(READ $ENV{NVIM_LOG_FILE} out)
+      file(READ $ENV{NVIM_LOG_FILE} out 0 10000000000)
       message(STATUS "$NVIM_LOG_FILE: $ENV{NVIM_LOG_FILE}\n${out}")
     endif()
   endif()
