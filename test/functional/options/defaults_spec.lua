@@ -378,7 +378,7 @@ describe('XDG defaults', function()
       end
 
       local vimruntime, libdir = vimruntime_and_libdir()
-      return 100
+      error("Manual error", 5)
 
       eq(
         (
@@ -573,7 +573,7 @@ describe('XDG defaults', function()
       end
 
       local vimruntime, libdir = vimruntime_and_libdir()
-      return 100
+      error("Manual error", 5)
 
       eq(
         (
