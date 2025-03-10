@@ -222,7 +222,7 @@ char *stdpaths_get_xdg_var(const XDGVarType idx)
 
   // fprintf(stderr, "%s", "stderr: ********************************Eddig eljut 9*****************************************\n");
   if (memfree && env_val != NULL) {
-    fprintf(stderr, "stderr: ******************************** Freeing up memory for %s *****************************************", env_val);
+    fprintf(stderr, "stderr: ******************************** Freeing up memory for %s *****************************************\n", env_val);
     xfree((char *)env_val);
     // fprintf(stderr, "%s", "stderr: ********************************Eddig eljut 10*****************************************\n");
   }

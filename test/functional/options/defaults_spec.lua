@@ -333,10 +333,12 @@ describe('XDG defaults', function()
   end)
 
   local function vimruntime_and_libdir()
+    io.stderr:write("begining vimruntime\n")
     local vimruntime = eval('$VIMRUNTIME')
     -- libdir is hard to calculate reliably across various ci platforms
     -- local libdir = string.gsub(vimruntime, "share/nvim/runtime$", "lib/nvim")
     local libdir = api.nvim__get_lib_dir()
+    io.stderr:write("ending vimruntime %s, %s\n", vimruntime, libdir)
     return vimruntime, libdir
   end
 

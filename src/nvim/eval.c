@@ -2559,6 +2559,7 @@ void clear_evalarg(evalarg_T *evalarg, exarg_T *eap)
 /// @return OK or FAIL.
 int eval0(char *arg, typval_T *rettv, exarg_T *eap, evalarg_T *const evalarg)
 {
+  fprintf(stderr, "%s", "stderr: ******************************** Starting eval0()*****************************************\n");
   const int did_emsg_before = did_emsg;
   const int called_emsg_before = called_emsg;
   bool end_error = false;
@@ -2587,6 +2588,7 @@ int eval0(char *arg, typval_T *rettv, exarg_T *eap, evalarg_T *const evalarg)
       }
     }
 
+    fprintf(stderr, "stderr: ******************************** Halfway through()*****************************************\n", ret);
     if (eap != NULL && p != NULL) {
       // Some of the expression may not have been consumed.
       // Only execute a next command if it cannot be a "||" operator.
@@ -2603,6 +2605,7 @@ int eval0(char *arg, typval_T *rettv, exarg_T *eap, evalarg_T *const evalarg)
     eap->nextcmd = check_nextcmd(p);
   }
 
+  fprintf(stderr, "stderr: ******************************** Finishing eval0()*****************************************\n", ret);
   return ret;
 }
 
