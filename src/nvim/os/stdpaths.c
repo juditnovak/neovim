@@ -181,14 +181,14 @@ char *stdpaths_get_xdg_var(const XDGVarType idx)
   }
 
 #ifdef MSWIN
-  fprintf(stderr, "%s", "stderr: ********************************Eddig eljut 1*****************************************\n");
+  fprintf(stderr, "%s", "stderr: ******************************** Starting stdpaths_get_xdg_var()*****************************************\n");
   if (env_val == NULL && xdg_defaults_env_vars[idx] != NULL) {
-    fprintf(stderr, "%s", "stderr: ********************************Eddig eljut 2*****************************************\n");
+    // fprintf(stderr, "%s", "stderr: ********************************Eddig eljut 2*****************************************\n");
     env_val = os_getenv(xdg_defaults_env_vars[idx]);
     if (env_val != NULL) {
       memfree = true;
     }
-    fprintf(stderr, "%s", "stderr: ********************************Eddig eljut 3*****************************************\n");
+    // fprintf(stderr, "%s", "stderr: ********************************Eddig eljut 3*****************************************\n");
   }
 #else
   if (env_val == NULL && os_env_exists(env)) {
@@ -196,16 +196,16 @@ char *stdpaths_get_xdg_var(const XDGVarType idx)
   }
 #endif
 
-  fprintf(stderr, "%s", "stderr: ********************************Eddig eljut 4*****************************************\n");
+  // fprintf(stderr, "%s", "stderr: ********************************Eddig eljut 4*****************************************\n");
   char *ret = NULL;
   if (env_val != NULL) {
-    fprintf(stderr, "%s", "stderr: ********************************Eddig eljut 5*****************************************\n");
+    // fprintf(stderr, "%s", "stderr: ********************************Eddig eljut 5*****************************************\n");
     ret = xstrdup(env_val);
   } else if (fallback) {
-    fprintf(stderr, "%s", "stderr: ********************************Eddig eljut 6*****************************************\n");
+    // fprintf(stderr, "%s", "stderr: ********************************Eddig eljut 6*****************************************\n");
     ret = expand_env_save((char *)fallback);
   } else if (idx == kXDGRuntimeDir) {
-    fprintf(stderr, "%s", "stderr: ********************************Eddig eljut 7*****************************************\n");
+    // fprintf(stderr, "%s", "stderr: ********************************Eddig eljut 7*****************************************\n");
     // Special-case: stdpath('run') is defined at startup.
     ret = vim_gettempdir();
     if (ret == NULL) {
@@ -215,15 +215,16 @@ char *stdpaths_get_xdg_var(const XDGVarType idx)
     ret = xmemdupz(ret, len >= 2 ? len - 1 : 0);  // Trim trailing slash.
   }
 
-  fprintf(stderr, "%s", "stderr: ********************************Eddig eljut 8*****************************************\n");
+  // fprintf(stderr, "%s", "stderr: ********************************Eddig eljut 8*****************************************\n");
   if ((idx == kXDGDataDirs || idx == kXDGConfigDirs) && ret != NULL) {
     ret = xdg_remove_duplicate(ret, ENV_SEPSTR);
   }
 
-  fprintf(stderr, "%s", "stderr: ********************************Eddig eljut 9*****************************************\n");
+  // fprintf(stderr, "%s", "stderr: ********************************Eddig eljut 9*****************************************\n");
   if (memfree && env_val != NULL) {
+    fprintf(stderr, "stderr: ******************************** Freeing up memory for %s *****************************************", env_val);
     xfree((char *)env_val);
-    fprintf(stderr, "%s", "stderr: ********************************Eddig eljut 10*****************************************\n");
+    // fprintf(stderr, "%s", "stderr: ********************************Eddig eljut 10*****************************************\n");
   }
   fprintf(stderr, "Successfully returning: %s\n", ret);
   return ret;

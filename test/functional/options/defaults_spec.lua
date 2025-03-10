@@ -552,9 +552,9 @@ describe('XDG defaults', function()
     end)
 
     after_each(function()
-      print("setting shadafile=NONE")
+      io.stderr:write("setting shadafile=NONE")
       command('set shadafile=NONE') -- Avoid writing shada file on exit
-      print("set shadafile=NONE")
+      io.stderr:write("set shadafile=NONE")
     end)
 
     it('are not expanded', function()
