@@ -3883,7 +3883,7 @@ dict_T *create_environment(const dictitem_T *job_env, const bool clear_env, cons
       if (!dv) {
         if (os_env_exists(required_env_vars[i], true)) {
           tv_dict_add_allocated_str(env, required_env_vars[i], len,
-                                    os_getenv_noalloc(required_env_vars[i]));
+                                    os_getenv(required_env_vars[i]));
         }
       }
     }
