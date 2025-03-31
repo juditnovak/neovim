@@ -124,9 +124,9 @@ char *os_getenv_noalloc(const char *name)
 /// Returns false if not found (UV_ENOENT) or other failure.
 ///
 /// @param name the environment variable in question
-/// @param defined whether the variable has a valid value, or may be empty
+/// @param nonempty whether the variable has a valid value, or may be empty
 /// @return whether the variable exists (and is defined)
-bool os_env_exists(const char *name, bool defined)
+bool os_env_exists(const char *name, bool nonempty)
   FUNC_ATTR_NONNULL_ALL
 {
   if (name[0] == NUL) {
@@ -141,7 +141,7 @@ bool os_env_exists(const char *name, bool defined)
   if (r != 0 && r != UV_ENOENT && r != UV_ENOBUFS) {
     ELOG("uv_os_getenv(%s) failed: %d %s", name, r, uv_err_name(r));
   }
-  return ((r == 0 && (!defined || size > 0)) || r == UV_ENOBUFS);
+  return ((r == 0 && (!nonempty || size > 0)) || r == UV_ENOBUFS);
 }
 
 /// Sets an environment variable.
@@ -157,11 +157,9 @@ int os_setenv(const char *name, const char *value, int overwrite)
     return -1;
   }
 #ifdef MSWIN
-  bool return_donothing = false;
   if (!overwrite && !os_env_exists(name, true)) {
     return 0;
   }
-
   if (value[0] == NUL) {
     // Windows (Vim-compat): Empty string undefines the env var.
     return os_unsetenv(name);
