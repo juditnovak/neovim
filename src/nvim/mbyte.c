@@ -2410,37 +2410,23 @@ char *enc_locale(void)
 {
   int i;
   char buf[50];
-  bool memfree = false;
 
   const char *s;
-  const char *langinfo = NULL;
-  const char *tofree = NULL;
 
 #ifdef HAVE_NL_LANGINFO_CODESET
   if (!(s = nl_langinfo(CODESET)) || *s == NUL)
 #endif
   {
     if (!(s = setlocale(LC_CTYPE, NULL)) || *s == NUL) {
-      if ((s = os_getenv("LC_ALL"))) {
-        memfree = true;
-        xfree((char *)s);
-        if ((s = os_getenv("LC_CTYPE"))) {
-          xfree((char *)s);
-          s = os_getenv("LANG");
+      if ((s = os_getenv_noalloc("LC_ALL"))) {
+        if ((s = os_getenv_noalloc("LC_CTYPE"))) {
+          s = os_getenv_noalloc("LANG");
         }
       }
     }
   }
 
-  if (s) {
-    langinfo = xstrdup(s);
-    tofree = langinfo;
-  }
-  if (memfree) {
-    xfree((char *)s);
-  }
-
-  if (!langinfo) {
+  if (!s) {
     return NULL;
   }
 
@@ -2451,9 +2437,9 @@ char *enc_locale(void)
   // Make the name lowercase and replace '_' with '-'.
   // Exception: "ja_JP.EUC" == "euc-jp", "zh_CN.EUC" = "euc-cn",
   // "ko_KR.EUC" == "euc-kr"
-  const char *p = vim_strchr(langinfo, '.');
+  const char *p = vim_strchr(s, '.');
   if (p != NULL) {
-    if (p > langinfo + 2 && !STRNICMP(p + 1, "EUC", 3)
+    if (p > s + 2 && !STRNICMP(p + 1, "EUC", 3)
         && !isalnum((uint8_t)p[4]) && p[4] != '-' && p[-3] == '_') {
       // Copy "XY.EUC" to "euc-XY" to buf[10].
       memmove(buf, "euc-", 4);
@@ -2461,23 +2447,22 @@ char *enc_locale(void)
       buf[5] = (char)(ASCII_ISALNUM(p[-1]) ? TOLOWER_ASC(p[-1]) : 0);
       buf[6] = NUL;
     } else {
-      langinfo = p + 1;
+      s = p + 1;
       goto enc_locale_copy_enc;
     }
   } else {
 enc_locale_copy_enc:
-    for (i = 0; i < (int)sizeof(buf) - 1 && langinfo[i] != NUL; i++) {
-      if (langinfo[i] == '_' || langinfo[i] == '-') {
+    for (i = 0; i < (int)sizeof(buf) - 1 && s[i] != NUL; i++) {
+      if (s[i] == '_' || s[i] == '-') {
         buf[i] = '-';
-      } else if (ASCII_ISALNUM((uint8_t)langinfo[i])) {
-        buf[i] = (char)TOLOWER_ASC(langinfo[i]);
+      } else if (ASCII_ISALNUM((uint8_t)s[i])) {
+        buf[i] = (char)TOLOWER_ASC(s[i]);
       } else {
         break;
       }
     }
     buf[i] = NUL;
   }
-  xfree((char *)tofree);
 
   return enc_canonize(buf);
 }

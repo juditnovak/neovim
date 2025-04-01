@@ -401,7 +401,6 @@ static void terminfo_start(TUIData *tui)
   }
 
   // None of the following work over SSH; see :help TERM .
-  char *tmux_env = os_getenv("TMUX");
   char *colorterm = os_getenv("COLORTERM");
   char *termprg = os_getenv("TERM_PROGRAM");
   char *vte_version_env = os_getenv("VTE_VERSION");
@@ -420,7 +419,7 @@ static void terminfo_start(TUIData *tui)
   bool wezterm = strequal(termprg, "WezTerm");
   const char *weztermv = wezterm ? term_program_version_env : NULL;
   bool screen = terminfo_is_term_family(term, "screen");
-  bool tmux = terminfo_is_term_family(term, "tmux") || !!tmux_env;
+  bool tmux = terminfo_is_term_family(term, "tmux") || os_env_exists("TMUX", true);
 
   // truecolor support must be checked before patching/augmenting terminfo
   tui->rgb = term_has_truecolor(tui, colorterm);
@@ -508,7 +507,6 @@ static void terminfo_start(TUIData *tui)
   flush_buf(tui);
 
   xfree(term);
-  xfree(tmux_env);
   xfree(colorterm);
   xfree(termprg);
   xfree(vte_version_env);
@@ -1983,7 +1981,6 @@ static void patch_terminfo_bugs(TUIData *tui, const char *term, const char *colo
 {
   unibi_term *ut = tui->ut;
   char *xterm_version = os_getenv("XTERM_VERSION");
-  char *env_tmux = os_getenv("TMUX");
   bool xterm = terminfo_is_term_family(term, "xterm")
                // Treat Terminal.app as generic xterm-like, for now.
                || nsterm;
@@ -1995,7 +1992,7 @@ static void patch_terminfo_bugs(TUIData *tui, const char *term, const char *colo
   bool teraterm = terminfo_is_term_family(term, "teraterm");
   bool putty = terminfo_is_term_family(term, "putty");
   bool screen = terminfo_is_term_family(term, "screen");
-  bool tmux = terminfo_is_term_family(term, "tmux") || !!env_tmux;
+  bool tmux = terminfo_is_term_family(term, "tmux") || os_env_exists("TMUX", true);
   bool st = terminfo_is_term_family(term, "st");
   bool gnome = terminfo_is_term_family(term, "gnome")
                || terminfo_is_term_family(term, "vte");
@@ -2295,7 +2292,6 @@ static void patch_terminfo_bugs(TUIData *tui, const char *term, const char *colo
     }
   }
 
-  xfree(env_tmux);
   xfree(xterm_version);
 }
 
@@ -2306,7 +2302,6 @@ static void augment_terminfo(TUIData *tui, const char *term, int vte_version, in
 {
   unibi_term *ut = tui->ut;
   char *xterm_version = os_getenv("XTERM_VERSION");
-  char *env_tmux = os_getenv("TMUX");
   bool xterm = terminfo_is_term_family(term, "xterm")
                // Treat Terminal.app as generic xterm-like, for now.
                || nsterm;
@@ -2317,7 +2312,7 @@ static void augment_terminfo(TUIData *tui, const char *term, int vte_version, in
   bool teraterm = terminfo_is_term_family(term, "teraterm");
   bool putty = terminfo_is_term_family(term, "putty");
   bool screen = terminfo_is_term_family(term, "screen");
-  bool tmux = terminfo_is_term_family(term, "tmux") || !!env_tmux;
+  bool tmux = terminfo_is_term_family(term, "tmux") || os_env_exists("TMUX", true);
   bool st = terminfo_is_term_family(term, "st");
   bool iterm = terminfo_is_term_family(term, "iterm")
                || terminfo_is_term_family(term, "iterm2")
@@ -2491,7 +2486,6 @@ static void augment_terminfo(TUIData *tui, const char *term, int vte_version, in
     tui->input.key_encoding = kKeyEncodingXterm;
   }
 
-  xfree(env_tmux);
   xfree(xterm_version);
 }
 

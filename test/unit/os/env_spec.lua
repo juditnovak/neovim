@@ -54,6 +54,8 @@ describe('env.c', function()
     eq(false, os_env_exists(varname, false))
     eq(OK, os_setenv(varname, 'foo bar baz ...', 1))
     eq(true, os_env_exists(varname, false))
+    eq(OK, os_setenv(varname, 'f', 1))
+    eq(true, os_env_exists(varname, true))
   end)
 
   itp('os_env_exists(..., true)', function()
@@ -68,6 +70,8 @@ describe('env.c', function()
     eq(OK, os_setenv(varname, '', 1))
     eq(false, os_env_exists(varname, true))
     eq(OK, os_setenv(varname, 'foo bar baz ...', 1))
+    eq(true, os_env_exists(varname, true))
+    eq(OK, os_setenv(varname, 'f', 1))
     eq(true, os_env_exists(varname, true))
   end)
 
@@ -154,6 +158,10 @@ describe('env.c', function()
       os_setenv(name, value, 1)
       eq(value, os_getenv(name))
 
+      -- Shortest non-empty value
+      os_setenv(name, 'z', 1)
+      eq('z', os_getenv(name))
+
       -- Get a big value.
       local bigval = ('x'):rep(256)
       eq(OK, os_setenv(name, bigval, 1))
@@ -179,6 +187,10 @@ describe('env.c', function()
       -- Use os_setenv because Lua doesn't have setenv.
       os_setenv(name, value, 1)
       eq(value, os_getenv_noalloc(name))
+
+      -- Shortest non-empty value
+      os_setenv(name, 'z', 1)
+      eq('z', os_getenv(name))
 
       local bigval = ('x'):rep(256)
       eq(OK, os_setenv(name, bigval, 1))

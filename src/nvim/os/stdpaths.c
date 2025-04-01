@@ -103,7 +103,6 @@ bool appname_is_valid(void)
       || strstr(appname, "../") != NULL) {
     return false;
   }
-
   return true;
 }
 
