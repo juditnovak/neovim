@@ -11,7 +11,12 @@
 #include "nvim/charset.h"
 #include "nvim/memory.h"
 #include "nvim/tui/terminfo.h"
+
+#ifdef USE_UNIBI
 #include "nvim/tui/terminfo_defs.h"
+#else
+#include "nvim/tui/terminfo_data.h"
+#endif
 
 #ifdef __FreeBSD__
 # include "nvim/os/os.h"
@@ -54,6 +59,17 @@ bool terminfo_is_bsd_console(const char *term)
   return false;
 }
 
+
+termdata *FROM_MEM(tdata_raw *input) {
+#ifdef USE_UNIBI
+    return unibi_from_mem((const char *)input, sizeof input);
+#else
+    termdata *td = (termdata *)xmalloc(sizeof(termdata));
+    td->td_base = input;
+    return td;
+#endif
+}
+
 /// Loads a built-in terminfo db when we (unibilium) failed to load a terminfo
 /// record from the environment (termcap systems, unrecognized $TERM, …).
 /// We do not attempt to detect xterm pretenders here.
@@ -61,81 +77,66 @@ bool terminfo_is_bsd_console(const char *term)
 /// @param term $TERM value
 /// @param[out,allocated] termname decided builtin 'term' name
 /// @return [allocated] terminfo structure
-static unibi_term *terminfo_builtin(const char *term, char **termname)
+static termdata *terminfo_builtin(const char *term, char **termname)
 {
   if (terminfo_is_term_family(term, "xterm")) {
     *termname = xstrdup("builtin_xterm");
-    return unibi_from_mem((const char *)xterm_256colour_terminfo,
-                          sizeof xterm_256colour_terminfo);
+    return FROM_MEM((tdata_raw *)&xterm_256colour_terminfo);
   } else if (terminfo_is_term_family(term, "screen")) {
     *termname = xstrdup("builtin_screen");
-    return unibi_from_mem((const char *)screen_256colour_terminfo,
-                          sizeof screen_256colour_terminfo);
+    return FROM_MEM((tdata_raw*)&screen_256colour_terminfo);
   } else if (terminfo_is_term_family(term, "tmux")) {
     *termname = xstrdup("builtin_tmux");
-    return unibi_from_mem((const char *)tmux_256colour_terminfo,
-                          sizeof tmux_256colour_terminfo);
+    return FROM_MEM((tdata_raw *)&tmux_256colour_terminfo);
   } else if (terminfo_is_term_family(term, "rxvt")) {
     *termname = xstrdup("builtin_rxvt");
-    return unibi_from_mem((const char *)rxvt_256colour_terminfo,
-                          sizeof rxvt_256colour_terminfo);
+    return FROM_MEM((tdata_raw *)&rxvt_256colour_terminfo);
   } else if (terminfo_is_term_family(term, "putty")) {
     *termname = xstrdup("builtin_putty");
-    return unibi_from_mem((const char *)putty_256colour_terminfo,
-                          sizeof putty_256colour_terminfo);
+    return FROM_MEM((tdata_raw *)&putty_256colour_terminfo);
   } else if (terminfo_is_term_family(term, "linux")) {
     *termname = xstrdup("builtin_linux");
-    return unibi_from_mem((const char *)linux_16colour_terminfo,
-                          sizeof linux_16colour_terminfo);
+    return FROM_MEM((tdata_raw *)&linux_16colour_terminfo);
   } else if (terminfo_is_term_family(term, "interix")) {
     *termname = xstrdup("builtin_interix");
-    return unibi_from_mem((const char *)interix_8colour_terminfo,
-                          sizeof interix_8colour_terminfo);
+    return FROM_MEM((tdata_raw *)&interix_8colour_terminfo);
   } else if (terminfo_is_term_family(term, "iterm")
              || terminfo_is_term_family(term, "iterm2")
              || terminfo_is_term_family(term, "iTerm.app")
              || terminfo_is_term_family(term, "iTerm2.app")) {
     *termname = xstrdup("builtin_iterm");
-    return unibi_from_mem((const char *)iterm_256colour_terminfo,
-                          sizeof iterm_256colour_terminfo);
+    return FROM_MEM((tdata_raw *)&iterm_256colour_terminfo);
   } else if (terminfo_is_term_family(term, "st")) {
     *termname = xstrdup("builtin_st");
-    return unibi_from_mem((const char *)st_256colour_terminfo,
-                          sizeof st_256colour_terminfo);
+    return FROM_MEM((tdata_raw *)&st_256colour_terminfo);
   } else if (terminfo_is_term_family(term, "gnome")
              || terminfo_is_term_family(term, "vte")) {
     *termname = xstrdup("builtin_vte");
-    return unibi_from_mem((const char *)vte_256colour_terminfo,
-                          sizeof vte_256colour_terminfo);
+    return FROM_MEM((tdata_raw *)&vte_256colour_terminfo);
   } else if (terminfo_is_term_family(term, "cygwin")) {
     *termname = xstrdup("builtin_cygwin");
-    return unibi_from_mem((const char *)cygwin_terminfo,
-                          sizeof cygwin_terminfo);
-  } else if (terminfo_is_term_family(term, "win32con")) {
-    *termname = xstrdup("builtin_win32con");
-    return unibi_from_mem((const char *)win32con_terminfo,
-                          sizeof win32con_terminfo);
-  } else if (terminfo_is_term_family(term, "conemu")) {
-    *termname = xstrdup("builtin_conemu");
-    return unibi_from_mem((const char *)conemu_terminfo,
-                          sizeof conemu_terminfo);
-  } else if (terminfo_is_term_family(term, "vtpcon")) {
-    *termname = xstrdup("builtin_vtpcon");
-    return unibi_from_mem((const char *)vtpcon_terminfo,
-                          sizeof vtpcon_terminfo);
+    return FROM_MEM((tdata_raw *)&cygwin_terminfo);
+  // } else if (terminfo_is_term_family(term, "win32con")) {
+  //   *termname = xstrdup("builtin_win32con");
+  //   return FROM_MEM((tdata_raw *)&win32con_terminfo);
+  // } else if (terminfo_is_term_family(term, "conemu")) {
+  //   *termname = xstrdup("builtin_conemu");
+  //   return FROM_MEM((tdata_raw *)&conemu_terminfo);
+  // } else if (terminfo_is_term_family(term, "vtpcon")) {
+  //   *termname = xstrdup("builtin_vtpcon");
+  //   return FROM_MEM((tdata_raw *)&vtpcon_terminfo);
   } else {
     *termname = xstrdup("builtin_ansi");
-    return unibi_from_mem((const char *)ansi_terminfo,
-                          sizeof ansi_terminfo);
+    return FROM_MEM((tdata_raw *)&ansi_terminfo);
   }
 }
 
 /// @param term $TERM value
 /// @param[out,allocated] termname decided builtin 'term' name
 /// @return [allocated] terminfo structure
-unibi_term *terminfo_from_builtin(const char *term, char **termname)
+termdata *terminfo_from_builtin(const char *term, char **termname)
 {
-  unibi_term *ut = terminfo_builtin(term, termname);
+  termdata *ut = terminfo_builtin(term, termname);
   if (*termname == NULL) {
     *termname = xstrdup("builtin_?");
   }
