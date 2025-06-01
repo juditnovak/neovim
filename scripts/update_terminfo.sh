@@ -101,6 +101,12 @@ HEADER="// uncrustify:off
 #include <stdint.h>
 "
 
+ALL_BOOLS_BASE=""
+ALL_BOOLS_EXT=""
+ALL_INTS_BASE=""
+ALL_INTS_EXT=""
+ALL_STRS_BASE=""
+ALL_STRS_EXT=""
 for term in $sorted_terms; do
   path="$(find "$db" -name "$term")"
   if [ -z "$path" ]; then
@@ -109,10 +115,12 @@ for term in $sorted_terms; do
   fi
   printf '\n'
 
-  INFCMP=$(infocmp -L -x -1 -c -sl -A "$db" "$term" | grep -v "comparing" | tail -n +3)
+  INFCMP_BASE=$(infocmp -L -1 -c -sl -A "$db" "$term" | grep -v "comparing" | tail -n +3)
+  INFCMP_WITH_EXT=$(infocmp -L -x -1 -c -sl -A "$db" "$term" | grep -v "comparing" | tail -n +3)
+  INFCMP_EXT_ONLY=$(echo "$INFCMP_WITH_EXT" | grep -v -F -f <(echo "$INFCMP_BASE") )
 
   # Bools
-  BOOLS=$(echo "$INFCMP" | \
+  BOOLS=$(echo "$INFCMP_BASE" | \
     grep "= [FT]" | \
     sed -s 's/= F/=false/' | \
     sed -e 's/= T/=true/' | \
@@ -125,10 +133,25 @@ for term in $sorted_terms; do
     echo "$BOOLS"
     printf '};\n'
   fi
+  ALL_BOOLS_BASE+=$(printf "\n%s" "$BOOLS" | cut -d= -f1 )
+
+  BOOLS_EXT=$(echo "$INFCMP_EXT_ONLY" | \
+    grep "= [FT]" | \
+    sed -s 's/= F/=false/' | \
+    sed -e 's/= T/=true/' | \
+    sed -e 's/\.$/,/' | \
+    sed -e 's/= /=/')
+
+  if [ "$BOOLS_EXT" != "" ]
+  then
+    printf 'static terminfo_data_ext_bool %s_bool_ext = {\n' "${entries[$term]}"
+    echo "$BOOLS_EXT"
+    printf '};\n'
+  fi
+  ALL_BOOLS_EXT+=$(printf "\n%s" "$BOOLS_EXT" | cut -d= -f1 )
 
   # Integers
-
-  INTS=$(echo "$INFCMP" | \
+  INTS=$(echo "$INFCMP_BASE" | \
     grep "= [0-9]" | \
     sed -e 's/\.$/,/' | \
     sed -e 's/= /=/')
@@ -139,9 +162,23 @@ for term in $sorted_terms; do
     echo "$INTS"
     printf '};\n'
   fi
+  ALL_INTS_BASE+=$(printf "\n%s" "$INTS" | cut -d= -f1 )
+
+  INTS_EXT=$(echo "$INFCMP_EXT_ONLY" | \
+    grep "= [0-9]" | \
+    sed -e 's/\.$/,/' | \
+    sed -e 's/= /=/')
+
+  if [ "$INTS_EXT" != "" ]
+  then
+    printf 'static terminfo_data_ext_int %s_int_ext = {\n' "${entries[$term]}"
+    echo "$INTS_EXT"
+    printf '};\n'
+  fi
+  ALL_INTS_EXT+=$(printf "\n%s" "$INTS_EXT" | cut -d= -f1 )
 
   # Strings
-  STRS=$(echo "$INFCMP" | \
+  STRS=$(echo "$INFCMP_BASE" | \
     grep -v "= [FT]" | \
     grep -v "= [0-9]" | \
     sed -e 's/= /=/' | \
@@ -164,123 +201,247 @@ for term in $sorted_terms; do
     echo "$STRS"
     printf '};\n\n'
   fi
+  ALL_STRS_BASE+=$(printf "\n%s" "$STRS" | cut -d= -f1 )
 
+  STRS_EXT=$(echo "$INFCMP_EXT_ONLY" | \
+    grep -v "= [FT]" | \
+    grep -v "= [0-9]" | \
+    sed -e 's/= /=/' | \
+    sed -e 's/\.$/,/' | \
+    sed -e 's/\x27/"/g' | \
+    sed -e 's/\\E/\\033/g' | \
+    sed -e 's/\^G/\\x07/g' | \
+    sed -e 's/\^H/\\x08/g' | \
+    sed -e 's/\^I/\\x09/g' | \
+    sed -e 's/\^J/\\x10/g' | \
+    sed -e 's/\^K/\\x11/g' | \
+    sed -e 's/\^L/\\x12/g' | \
+    sed -e 's/\^M/\\x13/g' | \
+    sed -e 's/\\n/\\x13/g' | \
+    sed -e 's/\\"/"/')
+
+  if [ "$STRS_EXT" != "" ]
+  then
+    printf 'static terminfo_data_ext_str %s_str_ext = {\n' "${entries[$term]}"
+    echo "$STRS_EXT"
+    printf '};\n\n'
+  fi
+  ALL_STRS_EXT+=$(printf "\n%s" "$STRS_EXT" | cut -d= -f1 )
+
+  # High-level structure
   printf 'static const struct terminfo_data %s = {\n' "${entries[$term]}"
 
   if [ "$BOOLS" != "" ]
   then
     printf '    .term_bools = &%s_bool,\n' "${entries[$term]}"
   fi
+  if [ "$BOOLS_EXT" != "" ]
+  then
+    printf '    .term_bools_ext = &%s_bool_ext,\n' "${entries[$term]}"
+  fi
 
   if [ "$INTS" != "" ]
   then
     printf '    .term_ints = &%s_int,\n' "${entries[$term]}"
+  fi
+  if [ "$INTS_EXT" != "" ]
+  then
+    printf '    .term_ints_ext = &%s_int_ext,\n' "${entries[$term]}"
   fi
 
   if [ "$STRS" != "" ]
   then
     printf '    .term_strs = &%s_str,\n' "${entries[$term]}"
   fi
+  if [ "$STRS_EXT" != "" ]
+  then
+    printf '    .term_strs_ext = &%s_str_ext,\n' "${entries[$term]}"
+  fi
 
   printf '};\n'
 
 done > "$target_data"
 
+ALL_BOOLS_BASE=$(echo "$ALL_BOOLS_BASE" | sort -u)
+ALL_BOOLS_EXT=$(echo "$ALL_BOOLS_EXT" | sort -u)
+ALL_INTS_BASE=$(echo "$ALL_INTS_BASE" | sort -u)
+ALL_INTS_EXT=$(echo "$ALL_INTS_EXT" | sort -u)
+ALL_STRS_BASE=$(echo "$ALL_STRS_BASE" | sort -u)
+ALL_STRS_EXT=$(echo "$ALL_STRS_EXT" | sort -u)
+
 
 # Supporting enums and data structures for non-unilibium usage
 
-bools=$(grep "true\|false" < "$target_data" | cut -d= -f1 | sort -u)
-ints=$(grep "=[0-9][0-9]*,$" < "$target_data" | cut -d= -f1 | sort -u)
-strs=$(grep '="' < "$target_data" | cut -d= -f1 | sort -u)
+all_bools=$(grep "true\|false" < "$target_data" | cut -d= -f1 | sort -u)
+all_ints=$(grep "=[0-9][0-9]*,$" < "$target_data" | cut -d= -f1 | sort -u)
+all_strs=$(grep '="' < "$target_data" | cut -d= -f1 | sort -u)
 
-bools_arr=($bools) 
-ints_arr=($ints) 
-strs_arr=($strs) 
-bools_num=${#bools_arr[@]}
-ints_num=${#ints_arr[@]}
-strs_num=${#strs_arr[@]}
+read -r -a all_bools_arr <<< "$all_bools"
+read -r -a all_ints_arr <<< "$all_ints"
+read -r -a all_strs_arr <<< "$all_strs"
+all_bools_num=${#all_bools_arr[@]}
+all_ints_num=${#all_ints_arr[@]}
+all_strs_num=${#all_strs_arr[@]}
 
-strs_ext="$strs"
-if [[ $strs != *"set_left_margin"* ]]
-then
- strs_ext+=" set_left_margin_parm" 
-fi
+base_bools_arr=($ALL_BOOLS_BASE)
+base_ints_arr=($ALL_INTS_BASE)
+base_strs_arr=($ALL_STRS_BASE)
+base_bools_num=${#base_bools_arr[@]}
+base_ints_num=${#base_ints_arr[@]}
+base_strs_num=${#base_strs_arr[@]}
 
-if [[ $strs != *"set_right_margin"* ]]
-then
- strs_ext+=" set_right_margin_parm" 
-fi
+ext_bools_arr=($ALL_BOOLS_EXT)
+ext_ints_arr=($ALL_INTS_EXT)
+ext_strs_arr=($ALL_STRS_EXT)
+ext_bools_num=${#ext_bools_arr[@]}
+ext_ints_num=${#ext_ints_arr[@]}
+ext_strs_num=${#ext_strs_arr[@]}
 
-if [[ $strs != *"set_tb_margin"* ]]
-then
- strs_ext+=" set_tb_margin" 
-fi
-
-if [[ $strs != *"from_status_line"* ]]
-then
- strs_ext+=" from_status_line" 
-fi
-
-if [[ $strs != *"to_status_line"* ]]
-then
- strs_ext+=" to_status_line" 
-fi
+extra_strs=$(echo -e "\tset_left_margin_parm\n\tset_right_margin_parm\n\tset_tb_margin\n\tfrom_status_line\n\tto_status_line")
+base_strs_with_extras="$ALL_STRS_BASE"$'\n'"$extra_strs"
+base_strs_with_extras=$( echo "$base_strs_with_extras" | sort -u)
+base_strs_with_extras_num=$((base_strs_num + 5))
 
 STRUCT+=$'typedef enum {\n'
-for boolvar in ${bools}
+for boolvar in ${ALL_BOOLS_BASE}
 do
   STRUCT+=$"\ttdata_${boolvar},\n"
 done
 STRUCT+=$'} terminfo_data_bool_enum;\n\n'
 
+if ((ext_bools_num))
+then
+  STRUCT+=$'typedef enum {\n'
+  for boolvar in ${ALL_BOOLS_EXT}
+  do
+    STRUCT+=$"\ttdata_${boolvar},\n"
+  done
+  STRUCT+=$'} terminfo_data_bool_ext_enum;\n\n'
+fi
+
 STRUCT+=$'typedef enum {\n'
-for intvar in ${ints}
+for intvar in ${ALL_INTS_BASE}
 do
   STRUCT+=$"\ttdata_${intvar},\n";
 done
 STRUCT+=$'} terminfo_data_int_enum;\n\n'
 
+if ((ext_ints_num))
+then
+  STRUCT+=$'typedef enum {\n'
+  for intvar in ${ALL_INTS_EXT}
+  do
+    STRUCT+=$"\ttdata_${intvar},\n";
+  done
+  STRUCT+=$'} terminfo_data_int_ext_enum;\n\n'
+fi
+
 STRUCT+=$'typedef enum {\n'
-for strvar in ${strs_ext}
+for strvar in ${base_strs_with_extras}
 do
   STRUCT+=$"\ttdata_${strvar},\n";
 done
 STRUCT+=$'} terminfo_data_str_enum;\n\n'
 
+if ((ext_strs_num))
+then
+  STRUCT+=$'typedef enum {\n'
+  for strvar in ${ALL_STRS_EXT}
+  do
+    STRUCT+=$"\ttdata_${strvar},\n";
+  done
+  STRUCT+=$'} terminfo_data_str_ext_enum;\n\n'
+fi
+
+
 UNIBI_STRUCT="${STRUCT}"
 
-STRUCT+=$"typedef bool terminfo_data_bool[$bools_num];\n"
-STRUCT+=$"typedef int terminfo_data_int[$ints_num];\n"
-STRUCT+=$"typedef char *terminfo_data_str[$strs_num];\n"
+STRUCT+=$"typedef bool terminfo_data_bool[$base_bools_num];\n"
+if ((ext_bools_num))
+then
+  STRUCT+=$"typedef bool terminfo_data_ext_bool[$ext_bools_num];\n"
+fi
+STRUCT+=$"typedef int terminfo_data_int[$base_ints_num];\n"
+if ((ext_ints_num))
+then
+  STRUCT+=$"typedef int terminfo_data_ext_int[$ext_ints_num];\n"
+fi
+STRUCT+=$"typedef char *terminfo_data_str[$base_strs_with_extras_num];\n"
+if ((ext_strs_num))
+then
+  STRUCT+=$"typedef char *terminfo_data_ext_str[$ext_strs_num];\n"
+fi
 
 STRUCT+=$'\n\n'
 
 STRUCT+=$'static char * const terminfo_data_bool_names[] = {\n'
-for boolvar in ${bools}
+for boolvar in ${ALL_BOOLS_BASE}
 do
   STRUCT+=$"\t[tdata_${boolvar}]=\"${boolvar}\",\n"
 done
 STRUCT+=$'};\n\n'
 
+if ((ext_bools_num))
+then
+  STRUCT+=$'static char * const terminfo_data_bool_ext_names[] = {\n'
+  for boolvar in ${ALL_BOOLS_EXT}
+  do
+    STRUCT+=$"\t[tdata_${boolvar}]=\"${boolvar}\",\n"
+  done
+  STRUCT+=$'};\n\n'
+fi
+
 STRUCT+=$'static char * const terminfo_data_int_names[] = {\n'
-for intvar in ${ints}
+for intvar in ${ALL_INTS_BASE}
 do
   STRUCT+=$"\t[tdata_${intvar}] = \"${intvar}\",\n";
 done
 STRUCT+=$'};\n\n'
 
+if ((ext_ints_num))
+then
+  STRUCT+=$'static char * const terminfo_data_int_ext_names[] = {\n'
+  for intvar in ${ALL_INTS_EXT}
+  do
+    STRUCT+=$"\t[tdata_${intvar}] = \"${intvar}\",\n";
+  done
+  STRUCT+=$'};\n\n'
+fi
+
 STRUCT+=$'static char * const terminfo_data_str_names[] = {\n'
-for strvar in ${strs}
+for strvar in ${ALL_STRS_BASE}
 do
   STRUCT+=$"\t[tdata_${strvar}] = \"${strvar}\",\n";
 done
-STRUCT+=$'};\n\n\n'
+STRUCT+=$'};\n\n'
+
+if ((ext_ints_num))
+then
+  STRUCT+=$'static char * const terminfo_data_str_ext_names[] = {\n'
+  for strvar in ${ALL_STRS_EXT}
+  do
+    STRUCT+=$"\t[tdata_${strvar}] = \"${strvar}\",\n";
+  done
+  STRUCT+=$'};\n\n\n'
+fi
 
 
 STRUCT+="struct terminfo_data {\n"
 STRUCT+="    terminfo_data_bool *term_bools;\n"
+if ((ext_bools_num))
+then
+  STRUCT+="    terminfo_data_ext_bool *term_bools_ext;\n"
+fi
 STRUCT+="    terminfo_data_int *term_ints;\n"
+if ((ext_ints_num))
+then
+  STRUCT+="    terminfo_data_ext_int *term_ints_ext;\n"
+fi
 STRUCT+="    terminfo_data_str *term_strs;\n"
+if ((ext_strs_num))
+then
+  STRUCT+="    terminfo_data_ext_str *term_strs_ext;\n"
+fi
 STRUCT+="};\n\n"
 
 
@@ -289,42 +450,23 @@ echo -e "${HEADER}\n\n${STRUCT}\n" | cat - "$target_data" | sed -E 's/(\s+)([[:a
 
 # Translation between local enums and unilibium enums for unilibium usage
 UNIBI_STRUCT+=$'static const int tr_unibi_bools_enum[] = {\n'
-for boolvar in ${bools}
+for boolvar in ${ALL_BOOLS_BASE}
 do
-  if [[ ! ${boolvar} =~ [A-Z][A-Z] ]]
-  then
-    UNIBI_STRUCT+=$"\t[tdata_${boolvar}]=unibi_${boolvar},\n"
-  fi
+  UNIBI_STRUCT+=$"\t[tdata_${boolvar}]=unibi_${boolvar},\n"
 done
 UNIBI_STRUCT+=$'};\n\n'
 
 UNIBI_STRUCT+=$'static const int tr_unibi_ints_enum[] = {\n'
-for intvar in ${ints}
+for intvar in ${ALL_INTS_BASE}
 do
   UNIBI_STRUCT+=$"\t[tdata_${intvar}]=unibi_${intvar},\n"
 done
 UNIBI_STRUCT+=$'};\n\n'
 
 UNIBI_STRUCT+=$'static const int tr_unibi_strs_enum[] = {\n'
-for strvar in ${strs_ext}
+for strvar in ${base_strs_with_extras}
 do
-  if [[ ${#strvar} -gt 2 ]] && 
-    [[ ! ${strvar} =~ k[a-z][0-9] ]] && 
-    [[ ! ${strvar} =~ kD[CN][0-9] ]] && 
-    [[ ! ${strvar} =~ kEND* ]] &&
-    [[ ! ${strvar} =~ kDN* ]] &&
-    [[ ! ${strvar} =~ kPRV[0-9] ]] &&
-    [[ ! ${strvar} =~ kIC[0-9] ]] &&
-    [[ ! ${strvar} =~ kLFT[0-9] ]] &&
-    [[ ! ${strvar} =~ kRIT[0-9] ]] &&
-    [[ ! ${strvar} =~ kUP[0-9]* ]] &&
-    [[ ! ${strvar} =~ kNXT[0-9] ]] &&
-    [[ ! ${strvar} =~ kHOM[0-9] ]] &&
-    [[ ! ${strvar} =~ kp[A-Z][A-Z][A-Z] ]] &&
-    [[ ! ${strvar} == *mxx ]]
-  then
-    UNIBI_STRUCT+=$"\t[tdata_${strvar}]=unibi_${strvar},\n"
-  fi
+  UNIBI_STRUCT+=$"\t[tdata_${strvar}]=unibi_${strvar},\n"
 done
 UNIBI_STRUCT+=$'};\n\n\n'
 
